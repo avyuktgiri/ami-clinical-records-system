@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AMI Clinical Records Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f3efe7;
+            --ink: #18232f;
+            --muted: #60717f;
+            --line: rgba(24, 35, 47, 0.09);
+            --panel: rgba(255, 255, 255, 0.86);
+            --panel-strong: #ffffff;
+            --accent: #c45a36;
+            --accent-deep: #8c3f24;
+            --teal: #0f7b78;
+            --teal-soft: #dff3ef;
+            --danger-soft: #ffe5dd;
+            --success-soft: #dff4e8;
+            --shadow: 0 24px 70px rgba(32, 39, 46, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Manrope", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(196, 90, 54, 0.16), transparent 28%),
+                radial-gradient(circle at 90% 10%, rgba(15, 123, 120, 0.15), transparent 24%),
+                linear-gradient(180deg, #f8f4ed 0%, #f2eee8 52%, #edf3f1 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            z-index: 0;
+            border-radius: 999px;
+            filter: blur(10px);
+            pointer-events: none;
+        }
+
+        body::before {
+            width: 340px;
+            height: 340px;
+            top: 84px;
+            right: -80px;
+            background: rgba(15, 123, 120, 0.11);
+        }
+
+        body::after {
+            width: 280px;
+            height: 280px;
+            left: -60px;
+            bottom: 120px;
+            background: rgba(196, 90, 54, 0.12);
+        }
+
+        .page-shell {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+        }
+
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 2rem;
+            background:
+                linear-gradient(130deg, rgba(23, 41, 56, 0.96), rgba(12, 94, 91, 0.92)),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            color: #fff;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: 24px auto auto 54%;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 68%);
+        }
+
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: auto -46px -56px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 42px;
+            transform: rotate(24deg);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            font-size: 0.76rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .hero-title,
+        .section-title,
+        .panel-title {
+            font-family: "Fraunces", serif;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-title {
+            max-width: 10ch;
+            font-size: clamp(2.2rem, 4vw, 4rem);
+            line-height: 0.98;
+            margin-bottom: 1rem;
+        }
+
+        .hero-copy {
+            max-width: 44rem;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 1.02rem;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-chip {
+            padding: 1rem 1.1rem;
+            border-radius: 1.25rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .surface-card {
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 1.8rem;
+            background: var(--panel);
+            backdrop-filter: blur(14px);
+            box-shadow: var(--shadow);
+        }
+
+        .section-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(15, 123, 120, 0.09);
+            color: var(--teal);
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .panel-title {
+            font-size: 1.8rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .panel-copy {
+            color: var(--muted);
+            margin-bottom: 0;
+        }
+
+        .field-cluster {
+            padding: 1.1rem;
+            border: 1px solid var(--line);
+            border-radius: 1.3rem;
+            background: rgba(255, 255, 255, 0.58);
+        }
+
+        .cluster-title {
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #304252;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 1rem;
+            border: 1px solid rgba(24, 35, 47, 0.12);
+            background: rgba(255, 255, 255, 0.95);
+            min-height: 3rem;
+            padding: 0.8rem 0.95rem;
+            box-shadow: none;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: rgba(15, 123, 120, 0.48);
+            box-shadow: 0 0 0 0.22rem rgba(15, 123, 120, 0.12);
+        }
+
+        .btn-brand,
+        .btn-search {
+            border: 0;
+            border-radius: 999px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            padding: 0.9rem 1.45rem;
+        }
+
+        .btn-brand {
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+            box-shadow: 0 14px 32px rgba(196, 90, 54, 0.24);
+        }
+
+        .btn-brand:hover,
+        .btn-brand:focus {
+            color: #fff;
+            background: linear-gradient(135deg, #cf6641, #934227);
+        }
+
+        .btn-search {
+            color: #fff;
+            background: linear-gradient(135deg, #0f7b78, #0d615f);
+            box-shadow: 0 14px 32px rgba(15, 123, 120, 0.24);
+        }
+
+        .btn-search:hover,
+        .btn-search:focus {
+            color: #fff;
+            background: linear-gradient(135deg, #128b87, #0d6967);
+        }
+
+        .search-shell {
+            position: sticky;
+            top: 1.5rem;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .search-bar .form-control {
+            flex: 1 1 240px;
+        }
+
+        .helper-note {
+            padding: 0.95rem 1rem;
+            border-radius: 1.1rem;
+            background: linear-gradient(180deg, rgba(15, 123, 120, 0.06), rgba(15, 123, 120, 0.02));
+            border: 1px dashed rgba(15, 123, 120, 0.2);
+            color: #40615f;
+            font-size: 0.92rem;
+        }
+
+        .result-shell {
+            min-height: 520px;
+        }
+
+        .empty-state {
+            min-height: 420px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            border-radius: 1.5rem;
+            background:
+                radial-gradient(circle at top, rgba(15, 123, 120, 0.08), transparent 36%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(248, 251, 252, 0.82));
+            border: 1px dashed rgba(24, 35, 47, 0.14);
+            color: var(--muted);
+            padding: 2rem;
+        }
+
+        .result-head {
+            padding: 1.25rem;
+            border-radius: 1.5rem;
+            background: linear-gradient(135deg, rgba(12, 28, 43, 0.97), rgba(23, 74, 94, 0.94));
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .patient-id-pill {
+            display: inline-flex;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.9rem 1.3rem;
+            font-size: 0.92rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-badge.large {
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+        }
+
+        .status-badge.bg-success {
+            background: linear-gradient(135deg, #1f9d68, #167b4f) !important;
+        }
+
+        .status-badge.bg-danger {
+            background: linear-gradient(135deg, #d94f3d, #b73327) !important;
+        }
+
+        .info-tile {
+            height: 100%;
+            padding: 1.05rem;
+            border-radius: 1.3rem;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.82);
+        }
+
+        .info-label {
+            display: block;
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 0.45rem;
+        }
+
+        .lab-card {
+            border: 1px solid var(--line);
+            border-radius: 1.45rem;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .lab-card .table {
+            margin-bottom: 0;
+        }
+
+        .lab-card thead th {
+            background: #edf6f4;
+            color: #365755;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom-width: 0;
+        }
+
+        .lab-card td,
+        .lab-card th {
+            padding: 0.9rem 1rem;
+            vertical-align: middle;
+            border-color: rgba(24, 35, 47, 0.06);
+        }
+
+        .metric-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(196, 90, 54, 0.09);
+            color: var(--accent-deep);
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .alert {
+            border: 0;
+            border-radius: 1rem;
+            padding: 0.95rem 1rem;
+        }
+
+        .alert-success {
+            background: var(--success-soft);
+            color: #14603d;
+        }
+
+        .alert-danger {
+            background: var(--danger-soft);
+            color: #8d3724;
+        }
+
+        .alert-warning {
+            background: #fff2cf;
+            color: #8b6420;
+        }
+
+        @media (max-width: 991.98px) {
+            .search-shell {
+                position: static;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .result-shell {
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .hero-panel,
+            .surface-card {
+                border-radius: 1.45rem;
+            }
+
+            .panel-title {
+                font-size: 1.5rem;
+            }
+
+            .hero-title {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4 py-lg-5 page-shell">
+        <section class="hero-panel p-4 p-md-5 mb-4 mb-lg-5">
+            <div class="row g-4 align-items-end">
+                <div class="col-lg-8">
+                    <div class="eyebrow mb-3">Acute Myocardial Infarction Records</div>
+                    <h1 class="hero-title">Clinical records with a calmer workflow.</h1>
+                    <p class="hero-copy mb-4">
+                        Add structured patient data, assign hospitals and doctors, and instantly review AMI status through a dashboard designed to feel clear, trustworthy, and fast.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="metric-chip">Bootstrap 5 Interface</span>
+                        <span class="metric-chip">Flask + MySQL Backend</span>
+                        <span class="metric-chip">100 Seeded Patients</span>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hero-stats">
+                        <div class="stat-chip">
+                            <span class="stat-value">3</span>
+                            <span class="stat-label">Hospitals ready for assignment</span>
+                        </div>
+                        <div class="stat-chip">
+                            <span class="stat-value">5</span>
+                            <span class="stat-label">Doctors available in rotation</span>
+                        </div>
+                        <div class="stat-chip">
+                            <span class="stat-value">24/7</span>
+                            <span class="stat-label">Quick AMI status lookups</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4 g-xl-5">
+            <div class="col-12 col-xl-7">
+                <section class="surface-card p-4 p-lg-5">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+                        <div>
+                            <div class="section-kicker mb-2">Patient Intake</div>
+                            <h2 class="panel-title section-title">Add New Patient</h2>
+                            <p class="panel-copy">Capture full blood-marker details and place each patient with the correct hospital and doctor.</p>
+                        </div>
+                    </div>
+
+                    <div id="formMessage" class="alert d-none" role="alert"></div>
+
+                    <form id="patientForm" class="row g-4">
+                        <div class="col-12">
+                            <div class="field-cluster">
+                                <div class="cluster-title">Core Patient Details</div>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="patientName" class="form-label">Patient Name</label>
+                                        <input type="text" class="form-control" id="patientName" placeholder="Enter full patient name" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="age" class="form-label">Age</label>
+                                        <input type="number" class="form-control" id="age" min="1" max="120" placeholder="40 - 80" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="gender" class="form-label">Gender</label>
+                                        <select id="gender" class="form-select" required>
+                                            <option value="">Choose...</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="amiStatus" class="form-label">AMI Status</label>
+                                        <select id="amiStatus" class="form-select" required>
+                                            <option value="">Choose...</option>
+                                            <option value="0">0 = No AMI</option>
+                                            <option value="1">1 = AMI Positive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="field-cluster">
+                                <div class="cluster-title">Care Assignment</div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="hospitalSelect" class="form-label">Select Hospital</label>
+                                        <select id="hospitalSelect" class="form-select" required>
+                                            <option value="">Loading hospitals...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="doctorSelect" class="form-label">Select Doctor</label>
+                                        <select id="doctorSelect" class="form-select" required disabled>
+                                            <option value="">Select a hospital first</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="field-cluster">
+                                <div class="cluster-title">Blood Marker Panel</div>
+                                <div class="row g-3">
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="wbc" class="form-label">WBC</label>
+                                        <input type="number" step="any" class="form-control" id="wbc" placeholder="e.g. 5.99" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="neu" class="form-label">NEU</label>
+                                        <input type="number" step="any" class="form-control" id="neu" placeholder="e.g. 3.36" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="neuLy" class="form-label">NEU/LY</label>
+                                        <input type="number" step="any" class="form-control" id="neuLy" placeholder="e.g. 1.68" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="pdw" class="form-label">PDW</label>
+                                        <input type="number" step="any" class="form-control" id="pdw" placeholder="e.g. 16.3" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="mpvLy" class="form-label">MPV/LY</label>
+                                        <input type="number" step="any" class="form-control" id="mpvLy" placeholder="e.g. 6.2" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="ly" class="form-label">LY</label>
+                                        <input type="number" step="any" class="form-control" id="ly" placeholder="e.g. 2.0" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="mo" class="form-label">MO</label>
+                                        <input type="number" step="any" class="form-control" id="mo" placeholder="e.g. 0.48" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="ba" class="form-label">BA</label>
+                                        <input type="number" step="any" class="form-control" id="ba" placeholder="e.g. 0.02" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="pltLy" class="form-label">PLT/LY</label>
+                                        <input type="number" step="any" class="form-control" id="pltLy" placeholder="e.g. 111" required>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label for="mpv" class="form-label">MPV</label>
+                                        <input type="number" step="any" class="form-control" id="mpv" placeholder="e.g. 12.4" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-grid d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-brand px-4">Save Patient Record</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <div class="col-12 col-xl-5">
+                <div class="search-shell">
+                    <section class="surface-card p-4 p-lg-5 mb-4">
+                        <div class="section-kicker mb-2">Rapid Lookup</div>
+                        <h2 class="panel-title section-title">Check AMI Status</h2>
+                        <p class="panel-copy mb-4">Search by patient ID or by an exact patient name to inspect the full clinical profile.</p>
+
+                        <div id="searchMessage" class="alert d-none" role="alert"></div>
+
+                        <div class="search-bar mb-3">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Enter patient ID or exact name">
+                            <button class="btn btn-search" id="searchButton" type="button">Search</button>
+                        </div>
+
+                        <div class="helper-note">
+                            Exact name search returns one clean match. If duplicate names ever exist, search by patient ID for the safest lookup.
+                        </div>
+                    </section>
+
+                    <section class="surface-card p-4 p-lg-5 result-shell">
+                        <div class="d-flex justify-content-between align-items-end gap-3 mb-4">
+                            <div>
+                                <div class="section-kicker mb-2">Patient View</div>
+                                <h3 class="panel-title section-title mb-0">Clinical Result</h3>
+                            </div>
+                        </div>
+                        <div id="patientResult">
+                            <div class="empty-state">
+                                <div>
+                                    <h4 class="panel-title mb-2">No patient selected yet</h4>
+                                    <p class="mb-0">Run a search to reveal AMI status, hospital assignment, doctor details, and the full blood-marker panel.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hospitalSelect = document.getElementById("hospitalSelect");
+        const doctorSelect = document.getElementById("doctorSelect");
+        const patientForm = document.getElementById("patientForm");
+        const formMessage = document.getElementById("formMessage");
+        const searchInput = document.getElementById("searchInput");
+        const searchButton = document.getElementById("searchButton");
+        const searchMessage = document.getElementById("searchMessage");
+        const patientResult = document.getElementById("patientResult");
+
+        const markerFieldMap = {
+            wbc: "wbc",
+            neu: "neu",
+            neuLy: "neu_ly",
+            pdw: "pdw",
+            mpvLy: "mpv_ly",
+            ly: "ly",
+            mo: "mo",
+            ba: "ba",
+            pltLy: "plt_ly",
+            mpv: "mpv"
+        };
+
+        function showAlert(element, type, message) {
+            element.className = `alert alert-${type}`;
+            element.textContent = message;
+            element.classList.remove("d-none");
+        }
+
+        function hideAlert(element) {
+            element.classList.add("d-none");
+            element.textContent = "";
+        }
+
+        async function fetchHospitals() {
+            const response = await fetch("/api/hospitals");
+            const hospitals = await response.json();
+
+            hospitalSelect.innerHTML = '<option value="">Choose...</option>';
+            hospitals.forEach((hospital) => {
+                const option = document.createElement("option");
+                option.value = hospital.hospital_id;
+                option.textContent = `${hospital.hospital_name} (${hospital.city})`;
+                hospitalSelect.appendChild(option);
+            });
+        }
+
+        async function fetchDoctors(hospitalId) {
+            doctorSelect.disabled = true;
+            doctorSelect.innerHTML = '<option value="">Loading doctors...</option>';
+
+            const response = await fetch(`/api/doctors/${hospitalId}`);
+            const doctors = await response.json();
+
+            doctorSelect.innerHTML = '<option value="">Choose...</option>';
+            doctors.forEach((doctor) => {
+                const option = document.createElement("option");
+                option.value = doctor.doctor_id;
+                option.textContent = `${doctor.doctor_name} - ${doctor.speciality}`;
+                doctorSelect.appendChild(option);
+            });
+            doctorSelect.disabled = false;
+        }
+
+        function collectPatientPayload() {
+            const payload = {
+                patient_name: document.getElementById("patientName").value.trim(),
+                age: document.getElementById("age").value,
+                gender: document.getElementById("gender").value,
+                hospital_id: hospitalSelect.value,
+                doctor_id: doctorSelect.value,
+                ami_status: document.getElementById("amiStatus").value
+            };
+
+            Object.entries(markerFieldMap).forEach(([inputId, apiField]) => {
+                payload[apiField] = document.getElementById(inputId).value;
+            });
+
+            return payload;
+        }
+
+        function resetDoctorSelect() {
+            doctorSelect.disabled = true;
+            doctorSelect.innerHTML = '<option value="">Select a hospital first</option>';
+        }
+
+        function renderPatientCard(patient) {
+            const statusClass = Number(patient.ami_status) === 1 ? "bg-danger" : "bg-success";
+            const statusLabel = Number(patient.ami_status) === 1 ? "AMI Positive" : "No AMI";
+
+            patientResult.innerHTML = `
+                <div class="result-head">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                        <div>
+                            <span class="patient-id-pill">Patient ID: ${patient.patient_id}</span>
+                            <h4 class="panel-title text-white mt-3 mb-2">${patient.patient_name}</h4>
+                            <p class="mb-0 text-white-50">Hospital assignment and AMI evaluation at a glance.</p>
+                        </div>
+                        <span class="status-badge large ${statusClass}">${statusLabel}</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="info-tile">
+                            <span class="info-label">Profile</span>
+                            <div><strong>Age:</strong> ${patient.age}</div>
+                            <div><strong>Gender:</strong> ${patient.gender}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-tile">
+                            <span class="info-label">Care Team</span>
+                            <div><strong>Hospital:</strong> ${patient.hospital_name}</div>
+                            <div><strong>Doctor:</strong> ${patient.doctor_name}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-tile">
+                            <span class="info-label">Hospital Location</span>
+                            <div>${patient.city}, ${patient.state}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-tile">
+                            <span class="info-label">Assigned Specialty</span>
+                            <div>${patient.speciality}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lab-card">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Marker</th>
+                                <th>Value</th>
+                                <th>Marker</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>WBC</td><td>${patient.wbc}</td><td>NEU</td><td>${patient.neu}</td></tr>
+                            <tr><td>NEU/LY</td><td>${patient.neu_ly}</td><td>PDW</td><td>${patient.pdw}</td></tr>
+                            <tr><td>MPV/LY</td><td>${patient.mpv_ly}</td><td>LY</td><td>${patient.ly}</td></tr>
+                            <tr><td>MO</td><td>${patient.mo}</td><td>BA</td><td>${patient.ba}</td></tr>
+                            <tr><td>PLT/LY</td><td>${patient.plt_ly}</td><td>MPV</td><td>${patient.mpv}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function loadPatientById(patientId) {
+            const response = await fetch(`/api/patients/${patientId}`);
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || "Unable to fetch patient details.");
+            }
+            renderPatientCard(payload);
+        }
+
+        async function searchPatient() {
+            hideAlert(searchMessage);
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                showAlert(searchMessage, "warning", "Enter a patient ID or exact patient name.");
+                return;
+            }
+
+            try {
+                if (/^\d+$/.test(query)) {
+                    await loadPatientById(query);
+                    return;
+                }
+
+                const response = await fetch(`/api/patients?name=${encodeURIComponent(query)}`);
+                const matches = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(matches.error || "Unable to search patient.");
+                }
+                if (matches.length === 0) {
+                    showAlert(searchMessage, "warning", "No patient found for that exact name.");
+                    return;
+                }
+                if (matches.length > 1) {
+                    showAlert(searchMessage, "warning", "Multiple patients found with that exact name. Please search by patient ID.");
+                    return;
+                }
+
+                await loadPatientById(matches[0].patient_id);
+            } catch (error) {
+                showAlert(searchMessage, "danger", error.message);
+            }
+        }
+
+        hospitalSelect.addEventListener("change", async (event) => {
+            hideAlert(formMessage);
+            const hospitalId = event.target.value;
+            if (!hospitalId) {
+                resetDoctorSelect();
+                return;
+            }
+
+            try {
+                await fetchDoctors(hospitalId);
+            } catch (error) {
+                resetDoctorSelect();
+                showAlert(formMessage, "danger", "Unable to load doctors for the selected hospital.");
+            }
+        });
+
+        patientForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            hideAlert(formMessage);
+
+            const payload = collectPatientPayload();
+
+            try {
+                const response = await fetch("/api/patients", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || "Unable to add patient.");
+                }
+
+                showAlert(formMessage, "success", `Patient added successfully! ID: ${result.patient_id}`);
+                patientForm.reset();
+                resetDoctorSelect();
+            } catch (error) {
+                showAlert(formMessage, "danger", error.message);
+            }
+        });
+
+        searchButton.addEventListener("click", searchPatient);
+        searchInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                searchPatient();
+            }
+        });
+
+        window.addEventListener("DOMContentLoaded", async () => {
+            try {
+                await fetchHospitals();
+                resetDoctorSelect();
+            } catch (error) {
+                showAlert(formMessage, "danger", "Unable to load hospitals. Check your backend connection.");
+            }
+        });
+    </script>
+</body>
+</html>
