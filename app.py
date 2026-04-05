@@ -47,6 +47,27 @@ REQUIRED_PATIENT_FIELDS = [
     *MARKER_FIELDS,
 ]
 ALLOWED_GENDERS = {"Male", "Female", "Other"}
+PATIENT_SUMMARY_QUERY = """
+    SELECT
+        p.patient_id,
+        p.patient_name,
+        p.age,
+        p.gender,
+        p.ami_status,
+        p.doctor_id,
+        p.hospital_id,
+        d.doctor_name,
+        d.speciality,
+        h.hospital_name,
+        h.city,
+        h.state
+    FROM patients p
+    JOIN doctors d
+        ON p.doctor_id = d.doctor_id
+       AND p.hospital_id = d.hospital_id
+    JOIN hospitals h
+        ON p.hospital_id = h.hospital_id
+"""
 
 
 def get_connection():
@@ -203,20 +224,18 @@ def get_patients():
         patient_name = request.args.get("name", "").strip()
         if patient_name:
             cursor.execute(
-                """
-                SELECT patient_id, patient_name, ami_status
-                FROM patients
-                WHERE LOWER(patient_name) = LOWER(%s)
-                ORDER BY patient_id
+                f"""
+                {PATIENT_SUMMARY_QUERY}
+                WHERE LOWER(p.patient_name) = LOWER(%s)
+                ORDER BY p.patient_id
                 """,
                 (patient_name,),
             )
         else:
             cursor.execute(
-                """
-                SELECT patient_id, patient_name, ami_status
-                FROM patients
-                ORDER BY patient_id
+                f"""
+                {PATIENT_SUMMARY_QUERY}
+                ORDER BY p.patient_id
                 """
             )
 
@@ -264,7 +283,9 @@ def get_patient_detail(patient_id):
                 h.city,
                 h.state
             FROM patients p
-            JOIN doctors d ON p.doctor_id = d.doctor_id
+            JOIN doctors d
+                ON p.doctor_id = d.doctor_id
+               AND p.hospital_id = d.hospital_id
             JOIN hospitals h ON p.hospital_id = h.hospital_id
             WHERE p.patient_id = %s
             """,

@@ -22,6 +22,16 @@ DOCTORS = [
     ("Dr. Meera Iyer", "Cardiology", "040-3888-2301", 2),
     ("Dr. Vikram Sethi", "Emergency Medicine", "044-4555-3401", 3),
     ("Dr. Nisha Verma", "Cardiology", "044-4555-3402", 3),
+    ("Dr. Karan Bedi", "Cardiology", "080-4100-1303", 1),
+    ("Dr. Priya Nair", "General Medicine", "080-4100-1304", 1),
+    ("Dr. Rohan Malhotra", "Cardiology", "080-4100-1305", 1),
+    ("Dr. Sneha Kapoor", "Emergency Medicine", "040-3888-2302", 2),
+    ("Dr. Arjun Rao", "Cardiology", "040-3888-2303", 2),
+    ("Dr. Kavya Shah", "Internal Medicine", "040-3888-2304", 2),
+    ("Dr. Manish Tandon", "Cardiology", "044-4555-3403", 3),
+    ("Dr. Isha Kulkarni", "General Medicine", "044-4555-3404", 3),
+    ("Dr. Dev Patel", "Emergency Medicine", "044-4555-3405", 3),
+    ("Dr. Tanvi Chawla", "Cardiology", "044-4555-3406", 3),
 ]
 
 COLUMN_MAPPING = {
@@ -37,6 +47,7 @@ COLUMN_MAPPING = {
     "PLT/LY": "plt_ly",
     "MPV": "mpv",
 }
+RANDOM_SEED = 42
 
 
 def get_connection(include_database=True):
@@ -131,25 +142,38 @@ def seed_reference_data(cursor):
         doctor_rows,
     )
 
-    doctor_ids = []
-    cursor.execute("SELECT doctor_id FROM doctors ORDER BY doctor_id")
+    doctor_records = []
+    cursor.execute("SELECT doctor_id, hospital_id FROM doctors ORDER BY doctor_id")
     for row in cursor.fetchall():
-        doctor_ids.append(row[0])
+        doctor_records.append({"doctor_id": row[0], "hospital_id": row[1]})
 
-    return hospital_ids, doctor_ids
+    return hospital_ids, doctor_records
 
 
-def build_patient_rows(hospital_ids, doctor_ids):
+def build_patient_rows(hospital_ids, doctor_records):
     dataframe = pd.read_excel(DATASET_PATH)
     dataframe = dataframe.rename(columns=COLUMN_MAPPING)
+    rng = random.Random(RANDOM_SEED)
+
+    doctors_by_hospital = {hospital_id: [] for hospital_id in hospital_ids}
+    for record in doctor_records:
+        doctors_by_hospital[record["hospital_id"]].append(record["doctor_id"])
+
+    hospital_doctor_positions = {hospital_id: 0 for hospital_id in hospital_ids}
 
     patient_rows = []
     for index, row in dataframe.iterrows():
+        hospital_id = hospital_ids[index % len(hospital_ids)]
+        hospital_doctors = doctors_by_hospital[hospital_id]
+        doctor_position = hospital_doctor_positions[hospital_id] % len(hospital_doctors)
+        doctor_id = hospital_doctors[doctor_position]
+        hospital_doctor_positions[hospital_id] += 1
+
         patient_rows.append(
             (
                 f"Patient_{index + 1:03d}",
-                random.randint(40, 80),
-                random.choice(["Male", "Female"]),
+                rng.randint(40, 80),
+                rng.choice(["Male", "Female"]),
                 int(row["ami_status"]),
                 float(row["wbc"]),
                 float(row["neu"]),
@@ -161,15 +185,15 @@ def build_patient_rows(hospital_ids, doctor_ids):
                 float(row["ba"]),
                 float(row["plt_ly"]),
                 float(row["mpv"]),
-                doctor_ids[index % len(doctor_ids)],
-                hospital_ids[index % len(hospital_ids)],
+                doctor_id,
+                hospital_id,
             )
         )
     return patient_rows
 
 
-def seed_patients(cursor, hospital_ids, doctor_ids):
-    patient_rows = build_patient_rows(hospital_ids, doctor_ids)
+def seed_patients(cursor, hospital_ids, doctor_records):
+    patient_rows = build_patient_rows(hospital_ids, doctor_records)
     cursor.executemany(
         """
         INSERT INTO patients (
@@ -192,10 +216,10 @@ def main():
         connection = get_connection()
         cursor = connection.cursor()
         recreate_tables(cursor)
-        hospital_ids, doctor_ids = seed_reference_data(cursor)
-        seed_patients(cursor, hospital_ids, doctor_ids)
+        hospital_ids, doctor_records = seed_reference_data(cursor)
+        seed_patients(cursor, hospital_ids, doctor_records)
         connection.commit()
-        print("Database seeded successfully with 3 hospitals, 5 doctors, and 100 patients.")
+        print("Database seeded successfully with 3 hospitals, 15 doctors, and 100 patients.")
     except Error as exc:
         if connection and connection.is_connected():
             connection.rollback()

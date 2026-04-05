@@ -297,6 +297,10 @@
             min-height: 520px;
         }
 
+        .directory-shell {
+            margin-top: 2rem;
+        }
+
         .empty-state {
             min-height: 420px;
             display: grid;
@@ -409,6 +413,30 @@
             color: var(--accent-deep);
             font-size: 0.8rem;
             font-weight: 800;
+        }
+
+        .directory-table th {
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #54706e;
+            background: #eef6f3;
+            border-bottom-width: 0;
+        }
+
+        .directory-table td,
+        .directory-table th {
+            padding: 0.9rem 0.95rem;
+            border-color: rgba(24, 35, 47, 0.06);
+            white-space: nowrap;
+        }
+
+        .directory-wrap {
+            max-height: 420px;
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: 1.35rem;
+            background: rgba(255, 255, 255, 0.92);
         }
 
         .alert {
@@ -657,6 +685,38 @@
                 </div>
             </div>
         </div>
+
+        <section class="surface-card p-4 p-lg-5 directory-shell">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+                <div>
+                    <div class="section-kicker mb-2">Patient Directory</div>
+                    <h2 class="panel-title section-title">All Seeded and Added Patients</h2>
+                    <p class="panel-copy">Quick overview of patient identity, demographics, assignment, and AMI status without opening the full blood-marker view.</p>
+                </div>
+            </div>
+            <div class="directory-wrap">
+                <div class="table-responsive">
+                    <table class="table directory-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Name</th>
+                                <th>Age</th>
+                                <th>Gender</th>
+                                <th>Hospital</th>
+                                <th>Doctor</th>
+                                <th>AMI Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="directoryBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Loading patient directory...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -668,6 +728,7 @@
         const searchButton = document.getElementById("searchButton");
         const searchMessage = document.getElementById("searchMessage");
         const patientResult = document.getElementById("patientResult");
+        const directoryBody = document.getElementById("directoryBody");
 
         const markerFieldMap = {
             wbc: "wbc",
@@ -721,6 +782,42 @@
                 doctorSelect.appendChild(option);
             });
             doctorSelect.disabled = false;
+        }
+
+        async function loadPatientDirectory() {
+            const response = await fetch("/api/patients");
+            const patients = await response.json();
+
+            if (!response.ok) {
+                throw new Error(patients.error || "Unable to load patient directory.");
+            }
+
+            directoryBody.innerHTML = "";
+
+            if (patients.length === 0) {
+                directoryBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No patients available.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            patients.forEach((patient) => {
+                const statusClass = Number(patient.ami_status) === 1 ? "bg-danger" : "bg-success";
+                const statusLabel = Number(patient.ami_status) === 1 ? "AMI Positive" : "No AMI";
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${patient.patient_id}</td>
+                    <td>${patient.patient_name}</td>
+                    <td>${patient.age}</td>
+                    <td>${patient.gender}</td>
+                    <td>${patient.hospital_name}</td>
+                    <td>${patient.doctor_name}</td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                `;
+                directoryBody.appendChild(row);
+            });
         }
 
         function collectPatientPayload() {
@@ -896,6 +993,7 @@
                 showAlert(formMessage, "success", `Patient added successfully! ID: ${result.patient_id}`);
                 patientForm.reset();
                 resetDoctorSelect();
+                await loadPatientDirectory();
             } catch (error) {
                 showAlert(formMessage, "danger", error.message);
             }
@@ -913,6 +1011,7 @@
             try {
                 await fetchHospitals();
                 resetDoctorSelect();
+                await loadPatientDirectory();
             } catch (error) {
                 showAlert(formMessage, "danger", "Unable to load hospitals. Check your backend connection.");
             }
