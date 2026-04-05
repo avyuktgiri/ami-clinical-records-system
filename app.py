@@ -135,6 +135,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/research-work")
+def research_work():
+    return render_template("research.html")
+
+
 @app.route("/api/hospitals", methods=["GET"])
 def get_hospitals():
     connection = None
