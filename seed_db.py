@@ -51,14 +51,20 @@ RANDOM_SEED = 42
 MALE_FIRST_NAMES = [
     "Aarav", "Vivaan", "Aditya", "Ishaan", "Reyansh",
     "Arjun", "Krish", "Rohan", "Kunal", "Dev",
+    "Atharv", "Vihaan", "Siddharth", "Harsh", "Lakshya",
+    "Pranav", "Yash", "Aniket", "Nikhil", "Manav",
 ]
 FEMALE_FIRST_NAMES = [
     "Aanya", "Diya", "Ira", "Kiara", "Myra",
     "Naina", "Riya", "Sara", "Tara", "Zoya",
+    "Anaya", "Meera", "Kavya", "Navya", "Ishita",
+    "Trisha", "Anika", "Pihu", "Saanvi", "Prisha",
 ]
 LAST_NAMES = [
     "Sharma", "Verma", "Patel", "Reddy", "Kapoor",
     "Nair", "Iyer", "Gupta", "Mehta", "Bhat",
+    "Kulkarni", "Joshi", "Chauhan", "Malhotra", "Saxena",
+    "Desai", "Pandey", "Agarwal", "Mishra", "Menon",
 ]
 
 
@@ -171,8 +177,56 @@ def generate_patient_name(gender, male_index, female_index):
         sequence_index = female_index
 
     first_name = first_names[sequence_index % len(first_names)]
-    last_name = LAST_NAMES[(sequence_index // len(first_names)) % len(LAST_NAMES)]
+    # Spread surnames more aggressively so the first 100 rows don't cluster on a single surname.
+    last_name = LAST_NAMES[(sequence_index * 3 + len(first_name)) % len(LAST_NAMES)]
     return f"{first_name} {last_name}"
+
+
+def build_weighted_doctor_cycles(doctors_by_hospital):
+    weighted_cycles = {}
+    for hospital_id, doctor_ids in doctors_by_hospital.items():
+        if len(doctor_ids) == 5:
+            weighted_cycles[hospital_id] = {
+                1: [
+                    doctor_ids[0], doctor_ids[0], doctor_ids[0],
+                    doctor_ids[1], doctor_ids[1],
+                    doctor_ids[2],
+                ],
+                0: [
+                    doctor_ids[3], doctor_ids[3], doctor_ids[3],
+                    doctor_ids[4], doctor_ids[4],
+                    doctor_ids[2],
+                ],
+            }
+        elif len(doctor_ids) == 4:
+            weighted_cycles[hospital_id] = {
+                1: [
+                    doctor_ids[0], doctor_ids[0], doctor_ids[0],
+                    doctor_ids[1], doctor_ids[1],
+                    doctor_ids[2],
+                ],
+                0: [
+                    doctor_ids[3], doctor_ids[3], doctor_ids[3],
+                    doctor_ids[2], doctor_ids[2],
+                    doctor_ids[1],
+                ],
+            }
+        else:
+            weighted_cycles[hospital_id] = {
+                1: [
+                    doctor_ids[0], doctor_ids[0], doctor_ids[0],
+                    doctor_ids[1], doctor_ids[1],
+                    doctor_ids[2], doctor_ids[2],
+                    doctor_ids[3],
+                ],
+                0: [
+                    doctor_ids[4], doctor_ids[4], doctor_ids[4],
+                    doctor_ids[5], doctor_ids[5],
+                    doctor_ids[3], doctor_ids[3],
+                    doctor_ids[2],
+                ],
+            }
+    return weighted_cycles
 
 
 def build_patient_rows(hospital_ids, doctor_records):
@@ -184,17 +238,21 @@ def build_patient_rows(hospital_ids, doctor_records):
     for record in doctor_records:
         doctors_by_hospital[record["hospital_id"]].append(record["doctor_id"])
 
-    hospital_doctor_positions = {hospital_id: 0 for hospital_id in hospital_ids}
+    weighted_cycles = build_weighted_doctor_cycles(doctors_by_hospital)
+    doctor_cycle_positions = {
+        hospital_id: {0: 0, 1: 0} for hospital_id in hospital_ids
+    }
     male_name_index = 0
     female_name_index = 0
 
     patient_rows = []
     for index, row in dataframe.iterrows():
         hospital_id = hospital_ids[index % len(hospital_ids)]
-        hospital_doctors = doctors_by_hospital[hospital_id]
-        doctor_position = hospital_doctor_positions[hospital_id] % len(hospital_doctors)
-        doctor_id = hospital_doctors[doctor_position]
-        hospital_doctor_positions[hospital_id] += 1
+        ami_status = int(row["ami_status"])
+        doctor_cycle = weighted_cycles[hospital_id][ami_status]
+        doctor_position = doctor_cycle_positions[hospital_id][ami_status] % len(doctor_cycle)
+        doctor_id = doctor_cycle[doctor_position]
+        doctor_cycle_positions[hospital_id][ami_status] += 1
         gender = rng.choice(["Male", "Female"])
         patient_name = generate_patient_name(gender, male_name_index, female_name_index)
         if gender == "Male":
@@ -207,7 +265,7 @@ def build_patient_rows(hospital_ids, doctor_records):
                 patient_name,
                 rng.randint(40, 80),
                 gender,
-                int(row["ami_status"]),
+                ami_status,
                 float(row["wbc"]),
                 float(row["neu"]),
                 float(row["neu_ly"]),
