@@ -48,6 +48,18 @@ COLUMN_MAPPING = {
     "MPV": "mpv",
 }
 RANDOM_SEED = 42
+MALE_FIRST_NAMES = [
+    "Aarav", "Vivaan", "Aditya", "Ishaan", "Reyansh",
+    "Arjun", "Krish", "Rohan", "Kunal", "Dev",
+]
+FEMALE_FIRST_NAMES = [
+    "Aanya", "Diya", "Ira", "Kiara", "Myra",
+    "Naina", "Riya", "Sara", "Tara", "Zoya",
+]
+LAST_NAMES = [
+    "Sharma", "Verma", "Patel", "Reddy", "Kapoor",
+    "Nair", "Iyer", "Gupta", "Mehta", "Bhat",
+]
 
 
 def get_connection(include_database=True):
@@ -150,6 +162,19 @@ def seed_reference_data(cursor):
     return hospital_ids, doctor_records
 
 
+def generate_patient_name(gender, male_index, female_index):
+    if gender == "Male":
+        first_names = MALE_FIRST_NAMES
+        sequence_index = male_index
+    else:
+        first_names = FEMALE_FIRST_NAMES
+        sequence_index = female_index
+
+    first_name = first_names[sequence_index % len(first_names)]
+    last_name = LAST_NAMES[(sequence_index // len(first_names)) % len(LAST_NAMES)]
+    return f"{first_name} {last_name}"
+
+
 def build_patient_rows(hospital_ids, doctor_records):
     dataframe = pd.read_excel(DATASET_PATH)
     dataframe = dataframe.rename(columns=COLUMN_MAPPING)
@@ -160,6 +185,8 @@ def build_patient_rows(hospital_ids, doctor_records):
         doctors_by_hospital[record["hospital_id"]].append(record["doctor_id"])
 
     hospital_doctor_positions = {hospital_id: 0 for hospital_id in hospital_ids}
+    male_name_index = 0
+    female_name_index = 0
 
     patient_rows = []
     for index, row in dataframe.iterrows():
@@ -168,12 +195,18 @@ def build_patient_rows(hospital_ids, doctor_records):
         doctor_position = hospital_doctor_positions[hospital_id] % len(hospital_doctors)
         doctor_id = hospital_doctors[doctor_position]
         hospital_doctor_positions[hospital_id] += 1
+        gender = rng.choice(["Male", "Female"])
+        patient_name = generate_patient_name(gender, male_name_index, female_name_index)
+        if gender == "Male":
+            male_name_index += 1
+        else:
+            female_name_index += 1
 
         patient_rows.append(
             (
-                f"Patient_{index + 1:03d}",
+                patient_name,
                 rng.randint(40, 80),
-                rng.choice(["Male", "Female"]),
+                gender,
                 int(row["ami_status"]),
                 float(row["wbc"]),
                 float(row["neu"]),
